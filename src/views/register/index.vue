@@ -1,18 +1,32 @@
 <template>
   <div class="login-container">
-    <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" auto-complete="on" label-position="left">
+    <el-form ref="registerForm" :model="registerForm" :rules="loginRules" class="login-form" auto-complete="on" label-position="left">
 
       <div class="title-container">
-        <h3 class="title">Login Form</h3>
+        <h3 class="title">Register Form</h3>
       </div>
 
+      <el-form-item prop="name">
+        <span class="svg-container">
+          <svg-icon icon-class="user" />
+        </span>
+        <el-input
+          ref="name"
+          v-model="registerForm.name"
+          placeholder="user name"
+          name="name"
+          type="text"
+          tabindex="1"
+          auto-complete="on"
+        />
+      </el-form-item>
       <el-form-item prop="email">
         <span class="svg-container">
           <svg-icon icon-class="user" />
         </span>
         <el-input
           ref="email"
-          v-model="loginForm.username"
+          v-model="registerForm.email"
           placeholder="email"
           name="email"
           type="text"
@@ -28,38 +42,58 @@
         <el-input
           :key="passwordType"
           ref="password"
-          v-model="loginForm.password"
+          v-model="registerForm.password"
           :type="passwordType"
           placeholder="Password"
           name="password"
           tabindex="2"
           auto-complete="on"
-          @keyup.enter.native="handleLogin"
+          @keyup.enter.native="handleRegister"
         />
         <span class="show-pwd" @click="showPwd">
           <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
         </span>
       </el-form-item>
+      <el-form-item prop="password_repeat">
+        <span class="svg-container">
+          <svg-icon icon-class="password" />
+        </span>
+        <el-input
+          :key="passwordRepeatType"
+          ref="password_repeat"
+          v-model="registerForm.password_repeat"
+          :type="passwordRepeatType"
+          placeholder="Repeat Your Password"
+          name="password_repeat"
+          tabindex="2"
+          auto-complete="on"
+        />
+        <span class="show-pwd" @click="showPwdRepeat">
+          <svg-icon :icon-class="passwordRepeatType === 'password' ? 'eye' : 'eye-open'" />
+        </span>
+      </el-form-item>
 
-      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">Login</el-button>
-
-      <div class="tips">
-        <el-button :loading="loading" style="width:100%;margin-bottom:30px;" @click.native.prevent="register">Register</el-button>
-      </div>
+      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleRegister">Register</el-button>
 
     </el-form>
   </div>
 </template>
 
 <script>
-import { validUsername } from '@/utils/validate'
 
 export default {
-  name: 'Login',
+  name: 'Register',
   data() {
     const validateUsername = (rule, value, callback) => {
-      if (!validUsername(value)) {
-        callback(new Error('Please enter the correct user name'))
+      if (value.length < 8) {
+        callback(new Error('Please enter a name length > 8'))
+      } else {
+        callback()
+      }
+    }
+    const validateEmail = (rule, value, callback) => {
+      if (value.length < 5) {
+        callback(new Error('Please enter right email address'))
       } else {
         callback()
       }
@@ -71,17 +105,33 @@ export default {
         callback()
       }
     }
+    const validatePasswordRepeat = (rule, value, callback) => {
+      if (value.length < 6) {
+        callback(new Error('The password can not be less than 6 digits'))
+      } else {
+        if (value !== this.registerForm.password) {
+          callback(new Error('The password repeat must equal the passwords'))
+        } else {
+          callback()
+        }
+      }
+    }
     return {
-      loginForm: {
-        email: 'admin',
-        password: '111111'
+      registerForm: {
+        name: '',
+        email: '',
+        password: '',
+        password_repeat: ''
       },
       loginRules: {
-        email: [{ required: true, trigger: 'blur', validator: validateUsername }],
-        password: [{ required: true, trigger: 'blur', validator: validatePassword }]
+        name: [{ required: true, trigger: 'blur', validator: validateUsername }],
+        email: [{ required: true, trigger: 'blur', validator: validateEmail }],
+        password: [{ required: true, trigger: 'blur', validator: validatePassword }],
+        password_repeat: [{ required: true, trigger: 'blur', validator: validatePasswordRepeat }]
       },
       loading: false,
       passwordType: 'password',
+      passwordRepeatType: 'password',
       redirect: undefined
     }
   },
@@ -104,12 +154,22 @@ export default {
         this.$refs.password.focus()
       })
     },
-    handleLogin() {
-      this.$refs.loginForm.validate(valid => {
+    showPwdRepeat() {
+      if (this.passwordRepeatType === 'password') {
+        this.passwordRepeatType = ''
+      } else {
+        this.passwordRepeatType = 'password'
+      }
+      this.$nextTick(() => {
+        this.$refs.password_repeat.focus()
+      })
+    },
+    handleRegister() {
+      this.$refs.registerForm.validate(valid => {
         if (valid) {
           this.loading = true
-          this.$store.dispatch('login', this.loginForm).then(() => {
-            this.$router.push({ path: this.redirect || '/' })
+          this.$store.dispatch('register', this.registerForm).then(() => {
+            // this.$router.push({ path: this.redirect || '/' })
             this.loading = false
           }).catch(() => {
             this.loading = false
@@ -119,9 +179,6 @@ export default {
           return false
         }
       })
-    },
-    register() {
-      this.$router.push({ path: '/register' })
     }
   }
 }
